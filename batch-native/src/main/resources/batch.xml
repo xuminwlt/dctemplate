@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean:beans xmlns="http://www.springframework.org/schema/batch"
+            xmlns:bean="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx"
+            xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+            xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+http://www.springframework.org/schema/batch
+http://www.springframework.org/schema/batch/spring-batch-3.0.xsd">
+
+    <bean:import resource="applicationContext.xml"/>
+
+    <job id="helloWorldJob">
+        <step id="step_hello" next="step_world">
+            <tasklet ref="hello" transaction-manager="transactionManager"></tasklet>
+        </step>
+        <step id="step_world">
+            <tasklet ref="world" transaction-manager="transactionManager"></tasklet>
+        </step>
+    </job>
+
+    <bean:bean id="hello" class="me.j360.batchnative.WriteTasklet">
+        <bean:property name="message" value="Hello "></bean:property>
+    </bean:bean>
+
+    <bean:bean id="world" class="me.j360.batchnative.WriteTasklet">
+        <bean:property name="message" value=" World!"></bean:property>
+    </bean:bean>
+</bean:beans>
