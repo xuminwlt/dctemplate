@@ -19,9 +19,11 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
 /**
@@ -42,6 +44,10 @@ public class BatchConfiguration {
 
     @Autowired
     public DataSource dataSource;
+
+    @Autowired
+    private Environment env;
+
 
     // tag::readerwriterprocessor[]
     @Bean
@@ -97,6 +103,32 @@ public class BatchConfiguration {
     @Bean
     public Step step1() {
         return stepBuilderFactory.get("step1")
+                .<Person, Person> chunk(10)
+                .reader(reader())
+                .processor(processor())
+                .writer(writer())
+                .build();
+    }
+    // end::jobstep[]
+
+
+
+    // tag::jobstep 2 []
+    @Bean
+    public Job importUserJob2() {
+        System.out.println(env.getProperty("test"));
+
+        return jobBuilderFactory.get("importUserJob2")
+                .incrementer(new RunIdIncrementer())
+                .listener(listener())
+                .flow(step1())
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Step step2_1() {
+        return stepBuilderFactory.get("step2_1")
                 .<Person, Person> chunk(10)
                 .reader(reader())
                 .processor(processor())
