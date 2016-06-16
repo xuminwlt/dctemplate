@@ -17,6 +17,7 @@ import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -30,7 +31,7 @@ import javax.sql.DataSource;
  * Package: me.j360.dctemplate
  * User: min_xu
  * Date: 16/6/13 下午4:07
- * 说明：
+ * 说明：java -jar  xxx.jar  --spring.application.json='{"foo":"bar"}' --test=xumin
  */
 @Configuration
 @EnableBatchProcessing
@@ -47,6 +48,10 @@ public class BatchConfiguration {
 
     @Autowired
     private Environment env;
+
+    @Value("${test}")
+    private String test;
+
 
 
     // tag::readerwriterprocessor[]
@@ -89,6 +94,9 @@ public class BatchConfiguration {
 
     // end::listener[]
 
+
+    //Job: [FlowJob: [name=importUserJob2]] launched with the following parameters: [{run.id=1, -test=xumin}]
+
     // tag::jobstep[]
     @Bean
     public Job importUserJob() {
@@ -116,7 +124,8 @@ public class BatchConfiguration {
     // tag::jobstep 2 []
     @Bean
     public Job importUserJob2() {
-        System.out.println(env.getProperty("test"));
+        System.out.println("---env##"+ env.getProperty("test"));
+        System.out.println("---#"+ test);
 
         return jobBuilderFactory.get("importUserJob2")
                 .incrementer(new RunIdIncrementer())

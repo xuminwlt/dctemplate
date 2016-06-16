@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean:beans xmlns="http://www.springframework.org/schema/batch"
+            xmlns:bean="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx"
+            xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+            xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+http://www.springframework.org/schema/batch
+http://www.springframework.org/schema/batch/spring-batch-3.0.xsd">
+
+    <bean:import resource="applicationContext.xml"/>
+
+
+    <job id="baseJob" abstract="true">
+        <listeners>
+        <listener ref="listenerOne"/>
+        <listeners>
+    </job>
+
+    <job id="footballJob" job-repository="specialRepository" restartable="false">
+
+        <step id="playerload"          parent="baseJob" next="gameLoad"/>
+        <step id="gameLoad"            parent="baseJob" next="playerSummarization"/>
+        <step id="playerSummarization" parent="baseJob"/>
+
+        <listeners>
+            <listener ref="sampleListener"/>
+        </listeners>
+
+        <validator ref="paremetersValidator"/>
+    </job>
+
+
+    <job-repository id="jobRepository"
+                    data-source="dataSource"
+                    transaction-manager="transactionManager"
+                    isolation-level-for-create="SERIALIZABLE"
+                    table-prefix="BATCH_"
+                    max-varchar-length="1000"
+
+                    isolation-level-for-create="REPEATABLE_READ"/>
+
+    <aop:config>
+        <aop:advisor
+                pointcut="execution(* org.springframework.batch.core..*Repository+.*(..))"/>
+        <advice-ref="txAdvice" />
+    </aop:config>
+
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="*" />
+        </tx:attributes>
+    </tx:advice>
+
+
+    <!-- In-Memory Repository-->
+    <bean id="jobRepository"
+          class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+
+    <!--Non-standard Database Types in a Repository-->
+    <bean id="jobRepository" class="org...JobRepositoryFactoryBean">
+        <property name="databaseType" value="db2"/>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!--Configuring a JobLauncher-->
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+        <property name="taskExecutor">
+            <bean class="org.springframework.core.task.SimpleAsyncTaskExecutor" />
+        </property>
+    </bean>
+
+
+    <!--Advanced Meta-Data Usage-->
+    <bean id="jobExplorer" class="org.spr...JobExplorerFactoryBean"
+          p:dataSource-ref="dataSource" p:tablePrefix="BATCH_" />
+
+
+    <!--JobOperator-->
+    <bean id="jobOperator" class="org.spr...SimpleJobOperator">
+        <property name="jobExplorer">
+            <bean class="org.spr...JobExplorerFactoryBean">
+                <property name="dataSource" ref="dataSource" />
+            </bean>
+        </property>
+        <property name="jobRepository" ref="jobRepository" />
+        <property name="jobRegistry" ref="jobRegistry" />
+        <property name="jobLauncher" ref="jobLauncher" />
+    </bean>
+
+
+    <!--step -->
+    <job id="sampleJob" job-repository="jobRepository">
+        <step id="step1">
+            <tasklet transaction-manager="transactionManager" start-limit="1">
+                <chunk reader="itemReader" writer="itemWriter" commit-interval="10"/>
+            </tasklet>
+        </step>
+    </job>
+
+
+
+    <step id="parentStep">
+        <tasklet allow-start-if-complete="true">
+            <chunk reader="itemReader" writer="itemWriter" commit-interval="10"/>
+        </tasklet>
+    </step>
+
+    <step id="concreteStep1" parent="parentStep">
+        <tasklet start-limit="5">
+            <chunk processor="itemProcessor" commit-interval="5"/>
+        </tasklet>
+    </step>
+
+
+
+    <!--Restart Configuration Example-->
+    <job id="footballJob" restartable="true">
+        <step id="playerload" next="gameLoad">
+            <tasklet>
+                <chunk reader="playerFileItemReader" writer="playerWriter"
+                       commit-interval="10" />
+            </tasklet>
+        </step>
+        <step id="gameLoad" next="playerSummarization">
+            <tasklet allow-start-if-complete="true">
+                <chunk reader="gameFileItemReader" writer="gameWriter"
+                       commit-interval="10"/>
+            </tasklet>
+        </step>
+        <step id="playerSummarization">
+            <tasklet start-limit="3">
+
+                <!--Transactional Readers-->
+                <chunk reader="playerSummarizationSource" writer="summaryWriter"
+                       commit-interval="10"  is-reader-transactional-queue="true">
+                    <skippable-exception-classes>
+                        <include class="org.springframework.batch.item.file.FlatFileParseException"/>
+                    </skippable-exception-classes>
+                        </chunk>
+
+
+                <skippable-exception-classes>
+                    <include class="java.lang.Exception"/>
+                    <exclude class="java.io.FileNotFoundException"/>
+                </skippable-exception-classes>
+
+                <no-rollback-exception-classes>
+                    <include class="org.springframework.batch.item.validator.ValidationException"/>
+                </no-rollback-exception-classes>
+
+                <!-- Transaction Attributes-->
+                <transaction-attributes isolation="DEFAULT"
+                                        propagation="REQUIRED"
+                                        timeout="30"/>
+
+                <!--Intercepting Step Execution -->
+                <listeners>
+                    <listener ref="chunkListener"/>
+                </listeners>
+            </tasklet>
+        </step>
+    </job>
+
+
+    <!--tasklet-->
+    <bean id="myTasklet" class="o.s.b.core.step.tasklet.MethodInvokingTaskletAdapter">
+        <property name="targetObject">
+            <bean class="org.mycompany.FooDao"/>
+        </property>
+        <property name="targetMethod" value="updateFoo" />
+    </bean>
+
+    <job id="taskletJob">
+        <step id="deleteFilesInDir">
+            <tasklet ref="fileDeletingTasklet"/>
+        </step>
+    </job>
+
+    <beans:bean id="fileDeletingTasklet"
+                class="org.springframework.batch.sample.tasklet.FileDeletingTasklet">
+        <beans:property name="directoryResource">
+            <beans:bean id="directory"
+                        class="org.springframework.core.io.FileSystemResource">
+                <beans:constructor-arg value="target/test-outputs/test-dir" />
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+
+    <!--条件flow-->
+    <job id="job">
+        <step id="stepA" parent="s1">
+            <next on="*" to="stepB" />
+            <next on="FAILED" to="stepC" />
+        </step>
+        <step id="stepB" parent="s2" next="stepC" />
+        <step id="stepC" parent="s3" />
+    </job>
+
+
+    <step id="step1" parent="s1">
+        <end on="FAILED" />
+        <next on="COMPLETED WITH SKIPS" to="errorPrint1" />
+        <next on="*" to="step2" />
+    </step>
+
+    <job id="job">
+        <step id="step1" parent="s1" next="decision" />
+
+        <decision id="decision" decider="decider">
+            <next on="FAILED" to="step2" />
+            <next on="COMPLETED" to="step3" />
+        </decision>
+
+        <step id="step2" parent="s2" next="step3"/>
+        <step id="step3" parent="s3" />
+    </job>
+
+    <beans:bean id="decider" class="com.MyDecider"/>
+
+
+
+    <!--param  system argument (-Dinput.file.name="file://file.txt")-->
+    <bean id="flatFileItemReader"
+          class="org.springframework.batch.item.file.FlatFileItemReader">
+        <property name="resource" value="${input.file.name}" />
+    </bean>
+
+
+
+    <job id="ioSampleJob">
+        <step name="step1">
+            <tasklet>
+                <chunk reader="fooReader" processor="compositeProcessor" writer="foobarWriter"
+                       commit-interval="2"/>
+            </tasklet>
+        </step>
+    </job>
+
+    <bean id="compositeItemProcessor"
+          class="org.springframework.batch.item.support.CompositeItemProcessor">
+        <property name="delegates">
+            <list>
+                <bean class="..FooProcessor" />
+                <bean class="..BarProcessor" />
+            </list>
+        </property>
+    </bean>
+
+
+    <!--jdbc-->
+    <bean id="itemReader" class="org.spr...JdbcCursorItemReader">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="sql" value="select ID, NAME, CREDIT from CUSTOMER"/>
+        <property name="rowMapper">
+            <bean class="org.springframework.batch.sample.domain.CustomerCreditRowMapper"/>
+        </property>
+    </bean>
+
+
+    <!--
+    Multi-threaded Step (single process)
+Parallel Steps (single process)
+Remote Chunking of Step (multi process)
+Partitioning a Step (single or multi process)
+    -->
+
+    <!--Multi-threaded Step-->
+    <step id="loading">
+        <tasklet task-executor="taskExecutor">...</tasklet>
+    </step>
+    <step id="loading"> <tasklet
+            task-executor="taskExecutor"
+            throttle-limit="20">...</tasklet>
+    </step>
+
+    <!--Parallel Steps-->
+    <job id="job1">
+        <split id="split1" task-executor="taskExecutor" next="step4">
+            <flow>
+                <step id="step1" parent="s1" next="step2"/>
+                <step id="step2" parent="s2"/>
+            </flow>
+            <flow>
+                <step id="step3" parent="s3"/>
+            </flow>
+        </split>
+        <step id="step4" parent="s4"/>
+    </job>
+
+    <bean id="taskExecutor" class="org.spr...SimpleAsyncTaskExecutor"/>
+
+
+
+</bean:beans>
