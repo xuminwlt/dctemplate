@@ -94,11 +94,11 @@ import javax.sql.DataSource;
 
 
 @Configuration
-@EnableBatchProcessing
+//@EnableBatchProcessing
 public class BatchConfiguretion {
 
 
-    @Autowired
+    /*@Autowired
     private JobRepository jobRepository;
     @Autowired
     private JobLauncher jobLauncher;
@@ -113,13 +113,9 @@ public class BatchConfiguretion {
 
 
     @Autowired
-    public DataSource dataSource;
+    public DataSource dataSource;*/
 
-    @Autowired
-    private Environment env;
 
-    @Value("${test}")
-    private String test;
 
 
 

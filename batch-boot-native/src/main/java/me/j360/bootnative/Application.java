@@ -2,6 +2,9 @@ package me.j360.bootnative;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
 
 /**
  * Package: me.j360.dctemplate
@@ -10,7 +13,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 说明：参数用--xxx=xxx的形式传递
  */
 
-@SpringBootApplication
+@Configuration
+@ComponentScan("me.j360")
+@ImportResource("batch.xml")
 public class Application {
 
     public static void main(String[] args) throws Exception {
