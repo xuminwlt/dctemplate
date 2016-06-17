@@ -1,6 +1,5 @@
 package me.j360.bootnative;
 
-import me.j360.bootnative.mapper.CustomerCreditRowMapper;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;

@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 @Configuration
 @ComponentScan("me.j360")
-@ImportResource("/jdbc/jdbc-paging-job.xml")
+@ImportResource("/item-enrichment-job.xml")
 @EnableScheduling
 public class Application {
 

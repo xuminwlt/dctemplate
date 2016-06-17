@@ -13,6 +13,7 @@
         <module>batch-native</module>
         <module>batch-boot-simple</module>
         <module>batch-boot-native</module>
+        <module>batch-boot-native-mysql</module>
     </modules>
 
 
