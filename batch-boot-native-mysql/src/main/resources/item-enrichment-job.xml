@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:batch="http://www.springframework.org/schema/batch"
-	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
-	xmlns:task="http://www.springframework.org/schema/task"
-	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:batch="http://www.springframework.org/schema/batch"
+	   xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	   xmlns:task="http://www.springframework.org/schema/task" xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+	   xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-		http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+		http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
 
 	<batch:job id="itemEnrichmentJob">
 		<batch:step id="itemEnrichmentStep">
@@ -80,5 +81,26 @@
 	</batch:job>	
 	
 	<task:executor id="taskExecutor" pool-size="5" />
+
+
+	<!--
+	<job id="sampleJob" job-repository="jobRepository">
+    <step id="step1">
+        <tasklet transaction-manager="transactionManager">
+            <chunk reader="itemReader" writer="itemWriter" commit-interval="10"/>
+        </tasklet>
+    </step>
+	</job>
+
+	<aop:config>
+		<aop:advisor
+				pointcut="execution(* org.springframework.batch.core..*Repository+.*(..))" advice-ref="txAdvice"/>
+	</aop:config>
+
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>-->
 
 </beans>
